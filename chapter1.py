@@ -1,9 +1,8 @@
 # for 03
 import heapq
-
-
-
-
+import time
+from functools import wraps
+from itertools import islice
 
 # 03
 def sum_of_squares_of_the_largest_n(xs, n):
@@ -233,8 +232,46 @@ def find_divisor(n, test_divisor):
             test_divisor += 1
     return n
 
+
 def smallest_divisor(n):
     return find_divisor(n, 2)
 
+
+def time_tag(func):
+    """returns (exetime, func(*args, **kwargs))
+    """
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        start = time.time()
+        result = func(*args, **kwargs)
+        end= time.time()
+        return (end - start, result)
+    return wrapper
+
+
+@time_tag
 def is_prime(n):
     return smallest_divisor(n) == n
+
+
+def search_for_prime(a):
+    """search for prime numbers from n
+    """
+    for i in range(a, 10**100):
+        t, test = is_prime(i)
+        if test:
+            yield t, i
+
+def ex22():
+    def three_primes(n):
+        """three smallest prime numbers from n
+        """
+        for t, v in islice(search_for_prime(n), 3):
+            print(" *** %d %6.10f " % (v, t))
+    # see for yourself
+    print()
+    three_primes(100000)
+    print()
+    three_primes(10000000)
+    print()
+    three_primes(1000000000)
