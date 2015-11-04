@@ -6,21 +6,21 @@ def evaluate(exp, env):
         return exp
     if is_variable(exp):
         return lookup_variable_value(exp, env)
-    if is_quoted(exp):
+    if is_tagged(exp, 'quote'):
         return text_of_quotation(exp)
-    if is_assignment(exp):
+    if is_tagged(exp, 'set!'):
         return eval_assignment(exp, env)
-    if is_definition(exp):
+    if is_tagged(exp, 'define'):
         return eval_definition(exp, env)
-    if is_if(exp):
+    if is_tagged(exp, 'if'):
         return eval_if(exp, env)
-    if is_lambda(exp):
+    if is_tagged(exp, 'lambda'):
         return make_procedure(lambda_parameters(exp),
                               lambda_body(exp),
                               env)
-    if is_begin(exp):
+    if is_tagged(exp, 'begin'):
         return eval_sequence(begin_actions(exp), env)
-    if is_cond(exp):
+    if is_tagged(exp, 'cond'):
         return evaluate(cond2if(exp), env)
     if is_application(exp):
         return apply(evaluate(operator(exp), env),
@@ -47,4 +47,10 @@ def is_self_evaluating(exp):
 def is_variable(exp):
     return isinstance(exp, str)
 
-def
+
+def tagged(exp, command):
+    return isinstance(exp, list) and exp != [] and exp[0] == command
+
+
+def is_application(exp):
+    return isinstance(exp, list) and exp != []
