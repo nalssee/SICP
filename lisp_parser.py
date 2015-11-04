@@ -22,28 +22,15 @@ def tokenize(expr):
 
 
 def parse(code):
-    def _parse(expr):
-        p = read_from_tokens()
-        p.send(None)
-        try:
-            for token in tokenize(expr):
-                p.send(token)
-        except StopIteration as e:
-            return e.value
+    p = read_from_tokens()
+    p.send(None)
+    try:
+        for token in tokenize(code):
+            p.send(token)
+    except StopIteration as e:
+        return e.value
 
-    def handle_quote(parsed):
-        if isinstance(parsed, list):
-            if parsed == []:
-                return []
-            a, *b = parsed
-            if a == "'":
-                return [["quote"] + handle_quote(b)]
-            return [handle_quote(a)] + handle_quote(b)
-        return parsed
-
-    return handle_quote(_parse(code))
-
-
+# coroutine
 def read_from_tokens():
     """Constructs a list from tokens.
     """
@@ -52,31 +39,25 @@ def read_from_tokens():
         result = []
         while True:
             r0 = yield from read_from_tokens()
-            if r0 == ')': break
+            if r0 == ')':
+                break
             result.append(r0)
         return result
-    elif token == ')':
-        return token
-    else:
-        return atom(token)
+    # handle quotes
+    elif token == "'":
+        r0 = yield from read_from_tokens()
+        return ['quote', r0]
+    return atom(token)
 
 
 def atom(x):
-    """Identifies what x means as a lisp token.
-
-    If x is enclosed with quotation marks, a tuple ("string", x)
-    elif x can be coerced to a number, it is returned as so.
-    """
     try:
         return int(x)
     except ValueError:
         try:
             return float(x)
         except ValueError:
-            if x[0] == '"' and x[-1] == '"':
-                return ("string", x[1:-1])
-            else:
-                return x
+            return x
 
 
 if __name__ == "__main__":
@@ -98,6 +79,12 @@ if __name__ == "__main__":
                                ['gcd', 'b', ['rem', 'a', 'b']]]]
             )
 
+        def test_simpler(self):
+            self.assertEqual(parse('3'), 3)
+            self.assertEqual(parse('-3.34'), -3.34)
+            self.assertEqual(parse('"abc"'), '"abc"')
+            self.assertEqual(parse("'a"), ['quote', 'a'])
+
         def test_string(self):
             code = """
             (define (fib n)
@@ -108,7 +95,7 @@ if __name__ == "__main__":
             """
             self.assertEqual(parse(code),
                              ['define', ['fib', 'n'],
-                              ('string', "Computes nth fibonacci number"),
+                              '"Computes nth fibonacci number"',
                               ['if', ['<', 'n', 2],
                                'n',
                                ['+', ['fib', ['-', 'n', 1]],
@@ -122,5 +109,8 @@ if __name__ == "__main__":
             self.assertEqual(parse(code),
                              ['define', 'his-name', ['quote', ['quote', ['kenjin', 'che']]]]
             )
+
+
+
 
     unittest.main()
