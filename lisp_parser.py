@@ -3,7 +3,6 @@
 Mostly from norvig.com,
 just using a coroutine instead of lists.
 """
-
 import re
 
 __all__ = ["parse"]
@@ -21,96 +20,40 @@ def tokenize(expr):
     return (x for x in re.findall(regex, expr) if x != '')
 
 
-def parse(code):
-    p = read_from_tokens()
-    p.send(None)
+def parse(expr):
+    reader = token_reader()
+    reader.send(None)
     try:
-        for token in tokenize(code):
-            p.send(token)
+        for token in tokenize(expr):
+            reader.send(token)
     except StopIteration as e:
         return e.value
 
-# coroutine
-def read_from_tokens():
-    """Constructs a list from tokens.
+
+def token_reader():
+    """Consume tokens to construct a lisp expression
     """
     token = yield
     if token == '(':
-        result = []
+        p_expr = []
         while True:
-            r0 = yield from read_from_tokens()
-            if r0 == ')':
+            exp1 = yield from token_reader()
+            if exp1 == ')':
                 break
-            result.append(r0)
-        return result
+            p_expr.append(exp1)
+        return p_expr
     # handle quotes
     elif token == "'":
-        r0 = yield from read_from_tokens()
-        return ['quote', r0]
+        exp1 = yield from token_reader()
+        return ['quote', exp1]
     return atom(token)
 
 
-def atom(x):
+def atom(token):
     try:
-        return int(x)
+        return int(token)
     except ValueError:
         try:
-            return float(x)
+            return float(token)
         except ValueError:
-            return x
-
-
-if __name__ == "__main__":
-
-    import unittest
-
-    class LispParserTest(unittest.TestCase):
-        def test_simple(self):
-            code = """
-            (define (gcd a b)
-              (if (= b 0)
-                  a
-                  (gcd b (rem a b))))
-            """
-            self.assertEqual(parse(code),
-                             ['define', ['gcd', 'a', 'b'],
-                              ['if', ['=', 'b', 0],
-                               'a',
-                               ['gcd', 'b', ['rem', 'a', 'b']]]]
-            )
-
-        def test_simpler(self):
-            self.assertEqual(parse('3'), 3)
-            self.assertEqual(parse('-3.34'), -3.34)
-            self.assertEqual(parse('"abc"'), '"abc"')
-            self.assertEqual(parse("'a"), ['quote', 'a'])
-
-        def test_string(self):
-            code = """
-            (define (fib n)
-              "Computes nth fibonacci number"
-              (if (< n 2)
-                n
-                (+ (fib (- n 1)) (fib (- n 2)))))
-            """
-            self.assertEqual(parse(code),
-                             ['define', ['fib', 'n'],
-                              '"Computes nth fibonacci number"',
-                              ['if', ['<', 'n', 2],
-                               'n',
-                               ['+', ['fib', ['-', 'n', 1]],
-                                ['fib', ['-', 'n', 2]]]]]
-            )
-
-        def test_quotes(self):
-            code = """
-            (define his-name  ''(kenjin che))
-            """
-            self.assertEqual(parse(code),
-                             ['define', 'his-name', ['quote', ['quote', ['kenjin', 'che']]]]
-            )
-
-
-
-
-    unittest.main()
+            return token
