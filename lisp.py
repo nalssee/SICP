@@ -1,26 +1,28 @@
-from lisp_parser import parse
+__all__ = ['evaluate', 'Env', 'UnboundVar']
+
+from .lisp_parser import parse
 
 
 def evaluate(exp, env):
     if is_self_evaluating(exp):
         return exp
     if is_variable(exp):
-        return lookup_variable_value(exp, env)
-    if is_tagged(exp, 'quote'):
+        return env.lookup(exp)
+    if tagged(exp, 'quote'):
         return text_of_quotation(exp)
-    if is_tagged(exp, 'set!'):
-        return eval_assignment(exp, env)
-    if is_tagged(exp, 'define'):
+    if tagged(exp, 'set!'):
+        return env.assign(exp)
+    if tagged(exp, 'define'):
         return eval_definition(exp, env)
-    if is_tagged(exp, 'if'):
+    if tagged(exp, 'if'):
         return eval_if(exp, env)
-    if is_tagged(exp, 'lambda'):
+    if tagged(exp, 'lambda'):
         return make_procedure(lambda_parameters(exp),
                               lambda_body(exp),
                               env)
-    if is_tagged(exp, 'begin'):
+    if tagged(exp, 'begin'):
         return eval_sequence(begin_actions(exp), env)
-    if is_tagged(exp, 'cond'):
+    if tagged(exp, 'cond'):
         return evaluate(cond2if(exp), env)
     if is_application(exp):
         return apply(evaluate(operator(exp), env),
@@ -54,3 +56,34 @@ def tagged(exp, command):
 
 def is_application(exp):
     return isinstance(exp, list) and exp != []
+
+
+class Env:
+    def __init__(self, frame={}):
+        self.frame = frame
+        # Upper frame
+        self.upper = None
+
+    def lookup(self, var):
+        try:
+            return self.frame[var]
+        except KeyError:
+            upperframe = self.upper
+            if upperframe == None:
+                raise UnboundVar(var)
+            return upperframe.lookup(var)
+
+    def assign(self, exp):
+        self.frame[exp[1]] = evaluate(exp[2], self)
+
+
+class LispException(Exception):
+    pass
+
+
+class UnboundVar(LispException):
+    pass
+
+
+def text_of_quotation(exp):
+    return exp[1]
