@@ -1,6 +1,7 @@
 __all__ = ['evaluate', 'Env', 'UnboundVar']
 
-from .lisp_parser import parse
+from collections import namedtuple
+from SICP.lisp_parser import parse
 
 
 def evaluate(exp, env):
@@ -9,41 +10,47 @@ def evaluate(exp, env):
     if is_variable(exp):
         return env.lookup(exp)
     if tagged(exp, 'quote'):
-        return text_of_quotation(exp)
+        _, text = exp
+        return text
     if tagged(exp, 'set!'):
         return env.assign(exp)
     if tagged(exp, 'define'):
-        return eval_definition(exp, env)
+        return env.define(exp)
     if tagged(exp, 'if'):
         return eval_if(exp, env)
     if tagged(exp, 'lambda'):
-        return make_procedure(lambda_parameters(exp),
-                              lambda_body(exp),
-                              env)
+        _, params, body = exp
+        return compound_procedure(params, body, env)
     if tagged(exp, 'begin'):
-        return eval_sequence(begin_actions(exp), env)
+        _, *actions = exp
+        return eval_sequence(actions, env)
     if tagged(exp, 'cond'):
         return evaluate(cond2if(exp), env)
     if is_application(exp):
-        return apply(evaluate(operator(exp), env),
-                     list_of_values(operands(exp), env))
-    raise ValueError('Unknown expression', exp)
+        op, *args = exp
+        proc = evaluate(func, env)
+        args = [evalute(arg, env) for arg in args]
+        return apply(proc, args)
+    raise UnknownExpr(exp)
 
 
 def apply(proc, args):
     if is_primitive(proc):
         return apply_primitive_proc(proc, args)
-    if is_compound_proc(proc):
-        return eval_sequence(proc_body(proc),
-                             extend_env(proc_params(proc),
-                                        args,
-                                        proc_env(proc)))
-    raise ValueError('Unknown proc type', proc)
+    if isinstance(proc, compound_procedure):
+        new_env = extend_env(proc.params, args, proc.env)
+        return eval_sequence(proc.body, new_env)
+    raise UnknownProcType(proc)
+
+
+compound_procedure = namedtuple('compound_procedure', 'params, body, env')
 
 
 def is_self_evaluating(exp):
-    return isinstance(exp, int) or isinstance(exp, float) \
-        or (isinstance(exp, str) and len(exp) >=2 and exp[0] == '"' and exp[-1] == '"')
+    return \
+        isinstance(exp, int) or isinstance(exp, float) \
+        or (isinstance(exp, str) and len(exp) >=2 and exp[0] == '"' and exp[-1] == '"') \
+        or exp == 'true' or exp == 'false'
 
 
 def is_variable(exp):
@@ -58,32 +65,59 @@ def is_application(exp):
     return isinstance(exp, list) and exp != []
 
 
+def eval_if(exp, env):
+    _, test, yes, no = exp
+    if evaluate(test, env) != 'false':
+        return evaluate(yes, env)
+    return evaluate(no, env)
+
+
+def eval_sequence(exps, env):
+    "Evaluate expressions in order and return the last one"
+    *exps, last = exps
+    for exp in exps:
+        evaluate(exp, env)
+    return evaluate(last, env)
+
+
 class Env:
     def __init__(self, frame={}):
         self.frame = frame
-        # Upper frame
+        # Upper Env
         self.upper = None
 
     def lookup(self, var):
         try:
             return self.frame[var]
         except KeyError:
-            upperframe = self.upper
-            if upperframe == None:
+            upper_env = self.upper
+            if upper_env == None:
                 raise UnboundVar(var)
-            return upperframe.lookup(var)
+            return upper_env.lookup(var)
 
     def assign(self, exp):
-        self.frame[exp[1]] = evaluate(exp[2], self)
+        _, var, valexp = exp
+        # evaluate first before the assignment
+        val = evaluate(valexp, self)
+        def env_loop(env):
+            try:
+                env.frame[var]
+            except KeyError:
+                upper_env = env.upper
+                if upper_env == None:
+                    raise UnboundVar(var)
+                env_loop(upper_env)
+            # var exists at this point
+            else:
+                env.frame[var] = val
+        env_loop(self)
+
+    def define(self, exp):
+        _, var, val = exp
+        self.frame[var] = evaluate(val, self)
 
 
-class LispException(Exception):
-    pass
-
-
-class UnboundVar(LispException):
-    pass
-
-
-def text_of_quotation(exp):
-    return exp[1]
+class LispException(Exception): pass
+class UnknownExpr(LispException): pass
+class UnknownProcType(LispException): pass
+class UnboundVar(LispException): pass
