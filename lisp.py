@@ -35,15 +35,20 @@ def evaluate(exp, env):
 
 
 def apply(proc, args):
-    if is_primitive(proc):
-        return apply_primitive_proc(proc, args)
+    if isinstance(proc, primitive_procecure):
+        return proc.pyfunc(*args)
     if isinstance(proc, compound_procedure):
         new_env = extend_env(proc.params, args, proc.env)
         return eval_sequence(proc.body, new_env)
     raise UnknownProcType(proc)
 
-
+primitive_procecure = namedtuple('primitive_procedure', 'pyfunc')
 compound_procedure = namedtuple('compound_procedure', 'params, body, env')
+
+
+def assign_pyfunc(func_symb, pyfunc, env):
+    env.frame = env
+
 
 
 def is_self_evaluating(exp):
@@ -121,3 +126,6 @@ class LispException(Exception): pass
 class UnknownExpr(LispException): pass
 class UnknownProcType(LispException): pass
 class UnboundVar(LispException): pass
+
+
+GLOBAL_ENV = Env()
