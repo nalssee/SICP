@@ -1,7 +1,11 @@
-__all__ = ['evaluate', 'Env', 'UnboundVar']
+__all__ = ['evaluate', 'Env', 'UnboundVar', 'UnknownExpr', 'UnknownProcType',
+           'GLOBAL_ENV',
+]
+
 
 from collections import namedtuple
 from SICP.lisp_parser import parse
+from SICP.builtins import *
 
 
 def evaluate(exp, env):
@@ -28,8 +32,8 @@ def evaluate(exp, env):
         return evaluate(cond2if(exp), env)
     if is_application(exp):
         op, *args = exp
-        proc = evaluate(func, env)
-        args = [evalute(arg, env) for arg in args]
+        proc = evaluate(op, env)
+        args = [evaluate(arg, env) for arg in args]
         return apply(proc, args)
     raise UnknownExpr(exp)
 
@@ -42,13 +46,9 @@ def apply(proc, args):
         return eval_sequence(proc.body, new_env)
     raise UnknownProcType(proc)
 
+
 primitive_procecure = namedtuple('primitive_procedure', 'pyfunc')
 compound_procedure = namedtuple('compound_procedure', 'params, body, env')
-
-
-def assign_pyfunc(func_symb, pyfunc, env):
-    env.frame = env
-
 
 
 def is_self_evaluating(exp):
@@ -128,4 +128,29 @@ class UnknownProcType(LispException): pass
 class UnboundVar(LispException): pass
 
 
+def setup_global_env():
+    def assign_pyfunc(func_symb, pyfunc):
+        frame = GLOBAL_ENV.frame
+        frame[func_symb] = primitive_procecure(pyfunc)
+
+    assign_pyfunc('+', plus)
+    assign_pyfunc('-', minus)
+    assign_pyfunc('*', mult)
+    assign_pyfunc('/', div)
+
+    assign_pyfunc('null?', is_null)
+    assign_pyfunc('cons', cons)
+    assign_pyfunc('car', car)
+    assign_pyfunc('cdr', cdr)
+    assign_pyfunc('list', lisp_list)
+
+    assign_pyfunc('not', lisp_not)
+    # just for the sake of convenience
+    assign_pyfunc('=', lisp_equal)
+    assign_pyfunc('equal?', lisp_equal)
+
+    assign_pyfunc('display', print)
+
+
 GLOBAL_ENV = Env()
+setup_global_env()

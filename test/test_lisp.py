@@ -10,7 +10,7 @@ from SICP.lisp import *
 import unittest
 
 
-def ev(exp, env=Env()):
+def ev(exp, env=GLOBAL_ENV):
     return evaluate(parse(exp), env)
 
 
@@ -66,5 +66,27 @@ class EVALTest(unittest.TestCase):
         proc = ev('(lambda (x y) (+ x y))')
         self.assertEqual(proc.params, ['x', 'y'])
         self.assertEqual(proc.body, ['+', 'x', 'y'])
+
+    def test_builtins(self):
+        self.assertEqual(ev('(+ 10 20 30)'), 60)
+        self.assertEqual(ev('(- 10 20 30)'), -40)
+        self.assertEqual(ev('(* 10 20 30)'), 6000)
+        self.assertEqual(ev('(/ 10 20 30)'), 10 / 20 / 30)
+        self.assertEqual(ev('(+ 1 (- 20 3) (* 4 5))'), 38)
+        self.assertEqual(ev("(cons 1 (cons 2 (cons 3 '())))"),
+                         ev("(list 1 2 3)"))
+        env = GLOBAL_ENV
+        ev('(define x (cons 1 (cons 2 3)))', env)
+        self.assertEqual(ev('(car (cdr x))', env), 2)
+        self.assertEqual(ev('(cdr (cdr x))', env), 3)
+
+        self.assertEqual(ev("(if (not (null? '())) true false)", env), 'false')
+        self.assertEqual(ev("(if (null? '()) true false)", env), 'true')
+        print()
+        ev('(display (list 1 2 "Do you see one, two and this in a list?"))')
+
+        self.assertEqual(ev('(= 3 4)'), 'false')
+        self.assertEqual(ev('(equal? (list 1 2 3) (list 1 2 3))'), 'true')
+
 
 unittest.main()
