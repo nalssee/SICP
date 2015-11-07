@@ -132,7 +132,7 @@ class EVALTest(unittest.TestCase):
         # properly tail recursive
         self.assertEqual(ev("(sum 2000)"), 2001000)
         self.assertEqual(ev("(map fib '(1 2 3 4 5 6 7 8))"),
-                         ev("(list 1 1 2 3 5 8 13 21)"))
+                         ev("'(1 1 2 3 5 8 13 21)"))
 
     def test_sequence(self):
         ev("""
@@ -142,6 +142,5 @@ class EVALTest(unittest.TestCase):
           (+ a 1))
         """)
         self.assertEqual(ev("(foo)"), 12)
-
 
 unittest.main()
