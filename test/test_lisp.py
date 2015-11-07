@@ -33,7 +33,7 @@ class EVALTest(unittest.TestCase):
 
     def test_quote(self):
         self.assertEqual(evaluate(parse("'abc"), Env()), 'abc')
-        self.assertEqual(evaluate(parse("' (a b c )"), Env()), ['a', 'b', 'c'])
+        self.assertEqual(ev("'(a (b) c )"), ev("(list 'a (list 'b) 'c)"))
 
 
     def test_define_simple(self):
@@ -65,7 +65,8 @@ class EVALTest(unittest.TestCase):
     def test_lambda(self):
         proc = ev('(lambda (x y) (+ x y))')
         self.assertEqual(proc.params, ['x', 'y'])
-        self.assertEqual(proc.body, ['+', 'x', 'y'])
+        self.assertEqual(proc.body, [['+', 'x', 'y']])
+
 
     def test_builtins(self):
         self.assertEqual(ev('(+ 10 20 30)'), 60)
@@ -87,6 +88,46 @@ class EVALTest(unittest.TestCase):
 
         self.assertEqual(ev('(= 3 4)'), 'false')
         self.assertEqual(ev('(equal? (list 1 2 3) (list 1 2 3))'), 'true')
+
+        self.assertEqual(ev('(= 1 1 1 1)'), 'true')
+        self.assertEqual(ev('(= 1 1 1 2)'), 'false')
+
+        self.assertEqual(ev('(< 1 2 3 4)'), 'true')
+        self.assertEqual(ev('(> 4 3 2 1)'), 'true')
+        self.assertEqual(ev('(<= 1 2 2 3)'), 'true')
+        self.assertEqual(ev('(>= 3 3 2 1)'), 'true')
+
+    def test_define(self):
+
+        ev("""
+        (define (fib n)
+          (if (< n 2)
+              n
+              (+ (fib (- n 1)) (fib (- n 2)))))
+        """)
+
+        ev("""
+        (define (sum n)
+          (define (loop n result)
+            (if (= n 0)
+                result
+                (loop (- n 1) (+ n result))))
+          (loop n 0))
+        """)
+
+        self.assertEqual(ev("(sum 100)"), 5050)
+        self.assertEqual(ev("(fib 10)"), 55)
+
+        ev("""
+        (define (map fn xs)
+          (if (null? xs)
+              '()
+              (cons (fn (car xs)) (map fn (cdr xs)))))
+        """)
+
+        self.assertEqual(ev("(map fib '(1 2 3 4 5 6 7 8))"),
+                         ev("(list 1 1 2 3 5 8 13 21)"))
+
 
 
 unittest.main()

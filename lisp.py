@@ -2,7 +2,6 @@ __all__ = ['evaluate', 'Env', 'UnboundVar', 'UnknownExpr', 'UnknownProcType',
            'GLOBAL_ENV',
 ]
 
-
 from collections import namedtuple
 from SICP.lisp_parser import parse
 from SICP.builtins import *
@@ -14,16 +13,15 @@ def evaluate(exp, env):
     if is_variable(exp):
         return env.lookup(exp)
     if tagged(exp, 'quote'):
-        _, text = exp
-        return text
+        return text_of_quotation(exp, env)
     if tagged(exp, 'set!'):
         return env.assign(exp)
     if tagged(exp, 'define'):
-        return env.define(exp)
+        return env.define(paren2lambda(exp))
     if tagged(exp, 'if'):
         return eval_if(exp, env)
     if tagged(exp, 'lambda'):
-        _, params, body = exp
+        _, params, *body = exp
         return compound_procedure(params, body, env)
     if tagged(exp, 'begin'):
         _, *actions = exp
@@ -42,8 +40,8 @@ def apply(proc, args):
     if isinstance(proc, primitive_procecure):
         return proc.pyfunc(*args)
     if isinstance(proc, compound_procedure):
-        new_env = extend_env(proc.params, args, proc.env)
-        return eval_sequence(proc.body, new_env)
+        newenv = proc.env.extend(proc.params, args)
+        return eval_sequence(proc.body, newenv)
     raise UnknownProcType(proc)
 
 
@@ -56,6 +54,12 @@ def is_self_evaluating(exp):
         isinstance(exp, int) or isinstance(exp, float) \
         or (isinstance(exp, str) and len(exp) >=2 and exp[0] == '"' and exp[-1] == '"') \
         or exp == 'true' or exp == 'false'
+
+def text_of_quotation(exp, env):
+    _, text = exp
+    if isinstance(text, list):
+        return evaluate(["list"] + [['quote', x] for x in text], env)
+    return text
 
 
 def is_variable(exp):
@@ -121,11 +125,28 @@ class Env:
         _, var, val = exp
         self.frame[var] = evaluate(val, self)
 
+    def extend(self, params, args):
+        newframe = {}
+        for p, a in zip(params, args):
+            newframe[p] = a
+        newenv = Env(newframe)
+        newenv.upper = self
+        return newenv
+
 
 class LispException(Exception): pass
 class UnknownExpr(LispException): pass
 class UnknownProcType(LispException): pass
 class UnboundVar(LispException): pass
+
+
+def paren2lambda(exp):
+    "(define (foo x) ...) => (define foo (lambda (x) ...))"
+    _, var, *body = exp
+    if isinstance(var, list):
+        name, *params = var
+        return ['define', name, ['lambda', params] + body]
+    return exp
 
 
 def setup_global_env():
@@ -146,8 +167,12 @@ def setup_global_env():
 
     assign_pyfunc('not', lisp_not)
     # just for the sake of convenience
-    assign_pyfunc('=', lisp_equal)
-    assign_pyfunc('equal?', lisp_equal)
+    assign_pyfunc('=', lisp_eq)
+    assign_pyfunc('equal?', lisp_eq)
+    assign_pyfunc('<', lisp_lt)
+    assign_pyfunc('>', lisp_gt)
+    assign_pyfunc('<=', lisp_le)
+    assign_pyfunc('>=', lisp_ge)
 
     assign_pyfunc('display', print)
 

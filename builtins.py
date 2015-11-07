@@ -1,4 +1,6 @@
+import operator
 from collections import namedtuple
+
 
 class cons(namedtuple('cons', 'car, cdr')):
     __slots__ = ()
@@ -55,5 +57,23 @@ def lisp_list(*args):
 def lisp_not(x):
     return 'true' if not x else 'false'
 
-def lisp_equal(x, y):
-    return 'true' if x == y else 'false'
+def lisp_compare(xs, pred):
+    for x1, x2 in zip(xs, xs[1:]):
+        if not pred(x1, x2):
+            return 'false'
+    return 'true'
+
+def lisp_eq(*xs):
+    return lisp_compare(xs, operator.eq)
+
+def lisp_lt(*xs):
+    return lisp_compare(xs, operator.lt)
+
+def lisp_gt(*xs):
+    return lisp_compare(xs, operator.gt)
+
+def lisp_le(*xs):
+    return lisp_compare(xs, operator.le)
+
+def lisp_ge(*xs):
+    return lisp_compare(xs, operator.ge)
