@@ -33,8 +33,7 @@ class EVALTest(unittest.TestCase):
 
     def test_quote(self):
         self.assertEqual(evaluate(parse("'abc"), Env()), 'abc')
-        self.assertEqual(ev("'(a (b) c )"), ev("(list 'a (list 'b) 'c)"))
-
+        self.assertEqual(ev("'(a ( b ) c)"), ev("(list 'a (list 'b) 'c)"))
 
     def test_define_simple(self):
         env = Env()
@@ -65,8 +64,7 @@ class EVALTest(unittest.TestCase):
     def test_lambda(self):
         proc = ev('(lambda (x y) (+ x y))')
         self.assertEqual(proc.params, ['x', 'y'])
-        self.assertEqual(proc.body, [['+', 'x', 'y']])
-
+        self.assertEqual(proc.body, ['+', 'x', 'y'])
 
     def test_builtins(self):
         self.assertEqual(ev('(+ 10 20 30)'), 60)
@@ -107,6 +105,14 @@ class EVALTest(unittest.TestCase):
         """)
 
         ev("""
+        (define gcd
+          (lambda (a b)
+            (if (= b 0)
+                a
+                (gcd b (rem a b)))))
+        """)
+
+        ev("""
         (define (sum n)
           (define (loop n result)
             (if (= n 0)
@@ -115,9 +121,6 @@ class EVALTest(unittest.TestCase):
           (loop n 0))
         """)
 
-        self.assertEqual(ev("(sum 100)"), 5050)
-        self.assertEqual(ev("(fib 10)"), 55)
-
         ev("""
         (define (map fn xs)
           (if (null? xs)
@@ -125,9 +128,20 @@ class EVALTest(unittest.TestCase):
               (cons (fn (car xs)) (map fn (cdr xs)))))
         """)
 
+        self.assertEqual(ev('(gcd 216 48)'), 24)
+        # properly tail recursive
+        self.assertEqual(ev("(sum 2000)"), 2001000)
         self.assertEqual(ev("(map fib '(1 2 3 4 5 6 7 8))"),
                          ev("(list 1 1 2 3 5 8 13 21)"))
 
+    def test_sequence(self):
+        ev("""
+        (define (foo)
+          (define a 10)
+          (set! a (+ a 1))
+          (+ a 1))
+        """)
+        self.assertEqual(ev("(foo)"), 12)
 
 
 unittest.main()

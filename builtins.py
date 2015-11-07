@@ -77,3 +77,6 @@ def lisp_le(*xs):
 
 def lisp_ge(*xs):
     return lisp_compare(xs, operator.ge)
+
+def lisp_rem(a, b):
+    return a % b

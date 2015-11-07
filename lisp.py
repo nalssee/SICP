@@ -1,52 +1,47 @@
-__all__ = ['evaluate', 'Env', 'UnboundVar', 'UnknownExpr', 'UnknownProcType',
-           'GLOBAL_ENV',
-]
+__all__ = ['evaluate', 'Env', 'UnboundVar', 'GLOBAL_ENV']
+
 
 from collections import namedtuple
 from SICP.lisp_parser import parse
 from SICP.builtins import *
 
+compound_procedure = namedtuple('compound_procedure', 'params, body, env')
 
 def evaluate(exp, env):
-    if is_self_evaluating(exp):
-        return exp
-    if is_variable(exp):
-        return env.lookup(exp)
-    if tagged(exp, 'quote'):
-        return text_of_quotation(exp, env)
-    if tagged(exp, 'set!'):
-        return env.assign(exp)
-    if tagged(exp, 'define'):
-        return env.define(paren2lambda(exp))
-    if tagged(exp, 'if'):
-        return eval_if(exp, env)
-    if tagged(exp, 'lambda'):
-        _, params, *body = exp
-        return compound_procedure(params, body, env)
-    if tagged(exp, 'begin'):
-        _, *actions = exp
-        return eval_sequence(actions, env)
-    if tagged(exp, 'cond'):
-        return evaluate(cond2if(exp), env)
-    if is_application(exp):
+    while True:
+        if is_self_evaluating(exp):
+            return exp
+        if is_variable(exp):
+            return env.lookup(exp)
+        if tagged(exp, 'quote'):
+            return text_of_quotation(exp, env)
+        if tagged(exp, 'set!'):
+            return env.assign(exp)
+        if tagged(exp, 'define'):
+            return env.define(paren2lambda(exp))
+        if tagged(exp, 'if'):
+            _, test, yes, no = exp
+            exp = yes if evaluate(test, env) != 'false' else no
+            continue
+        if tagged(exp, 'lambda'):
+            _, params, *body = exp
+            body = body[0] if len(body) == 1 else ['begin'] + body
+            return compound_procedure(params, body, env)
+        if tagged(exp, 'begin'):
+            _, *actions, exp = exp
+            for act in actions:
+                evaluate(act, env)
+            continue
+        # And it's a procedure application
         op, *args = exp
         proc = evaluate(op, env)
         args = [evaluate(arg, env) for arg in args]
-        return apply(proc, args)
-    raise UnknownExpr(exp)
 
-
-def apply(proc, args):
-    if isinstance(proc, primitive_procecure):
-        return proc.pyfunc(*args)
-    if isinstance(proc, compound_procedure):
-        newenv = proc.env.extend(proc.params, args)
-        return eval_sequence(proc.body, newenv)
-    raise UnknownProcType(proc)
-
-
-primitive_procecure = namedtuple('primitive_procedure', 'pyfunc')
-compound_procedure = namedtuple('compound_procedure', 'params, body, env')
+        if isinstance(proc, compound_procedure):
+            env = proc.env.extend(proc.params, args)
+            exp = proc.body
+            continue
+        return proc(*args)
 
 
 def is_self_evaluating(exp):
@@ -54,6 +49,7 @@ def is_self_evaluating(exp):
         isinstance(exp, int) or isinstance(exp, float) \
         or (isinstance(exp, str) and len(exp) >=2 and exp[0] == '"' and exp[-1] == '"') \
         or exp == 'true' or exp == 'false'
+
 
 def text_of_quotation(exp, env):
     _, text = exp
@@ -72,21 +68,6 @@ def tagged(exp, command):
 
 def is_application(exp):
     return isinstance(exp, list) and exp != []
-
-
-def eval_if(exp, env):
-    _, test, yes, no = exp
-    if evaluate(test, env) != 'false':
-        return evaluate(yes, env)
-    return evaluate(no, env)
-
-
-def eval_sequence(exps, env):
-    "Evaluate expressions in order and return the last one"
-    *exps, last = exps
-    for exp in exps:
-        evaluate(exp, env)
-    return evaluate(last, env)
 
 
 class Env:
@@ -135,8 +116,6 @@ class Env:
 
 
 class LispException(Exception): pass
-class UnknownExpr(LispException): pass
-class UnknownProcType(LispException): pass
 class UnboundVar(LispException): pass
 
 
@@ -152,12 +131,13 @@ def paren2lambda(exp):
 def setup_global_env():
     def assign_pyfunc(func_symb, pyfunc):
         frame = GLOBAL_ENV.frame
-        frame[func_symb] = primitive_procecure(pyfunc)
+        frame[func_symb] = pyfunc
 
     assign_pyfunc('+', plus)
     assign_pyfunc('-', minus)
     assign_pyfunc('*', mult)
     assign_pyfunc('/', div)
+    assign_pyfunc('rem', lisp_rem)
 
     assign_pyfunc('null?', is_null)
     assign_pyfunc('cons', cons)
@@ -166,7 +146,6 @@ def setup_global_env():
     assign_pyfunc('list', lisp_list)
 
     assign_pyfunc('not', lisp_not)
-    # just for the sake of convenience
     assign_pyfunc('=', lisp_eq)
     assign_pyfunc('equal?', lisp_eq)
     assign_pyfunc('<', lisp_lt)
