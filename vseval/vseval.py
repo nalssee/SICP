@@ -12,6 +12,7 @@ def vseval(exp, env):
     while True:
         if is_self_evaluating(exp):
             return exp
+        # exp is a variable
         if isinstance(exp, str):
             return env.lookup(exp)
 
@@ -22,13 +23,14 @@ def vseval(exp, env):
         if cmd == 'set!':
             return env.assign(exp)
         if cmd == 'define':
-            return env.define(paren2lambda(exp))
+            return env.define(to_lambda(exp))
         if cmd == 'if':
             test, yes, no = args
             exp = yes if vseval(test, env) != 'false' else no
             continue
         if cmd == 'lambda':
             params, *body = args
+            # attach 'begin' if body contains multiple actions
             body = body[0] if len(body) == 1 else ['begin'] + body
             return compound_procedure(params, body, env)
         if cmd == 'begin':
@@ -48,6 +50,8 @@ def vseval(exp, env):
 
 
 def is_self_evaluating(exp):
+    """number, string, booleans
+    """
     return \
         isinstance(exp, int) or isinstance(exp, float) \
         or (isinstance(exp, str) and len(exp) >=2 and exp[0] == '"' and exp[-1] == '"') \
@@ -55,6 +59,8 @@ def is_self_evaluating(exp):
 
 
 def text_of_quotation(exp, env):
+    """ '(1 a) => (list '1 'a) and evaluate
+    """
     _, text = exp
     if isinstance(text, list):
         return vseval(["list"] + [['quote', x] for x in text], env)
@@ -64,7 +70,7 @@ def text_of_quotation(exp, env):
 class Env:
     def __init__(self, frame={}):
         self.frame = frame
-        # Upper Env
+        # Upper Env, not upper frame
         self.upper = None
 
     def lookup(self, var):
@@ -78,7 +84,7 @@ class Env:
 
     def assign(self, exp):
         _, var, valexp = exp
-        # evaluate first before the assignment
+        # evaluate the value expression first before the assignment
         val = vseval(valexp, self)
         def env_loop(env):
             try:
@@ -110,7 +116,7 @@ class LispException(Exception): pass
 class UnboundVar(LispException): pass
 
 
-def paren2lambda(exp):
+def to_lambda(exp):
     "(define (foo x) ...) => (define foo (lambda (x) ...))"
     _, var, *body = exp
     if isinstance(var, list):
