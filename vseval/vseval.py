@@ -2,9 +2,14 @@ __all__ = ['vseval', 'Env', 'UnboundVar', 'GLOBAL_ENV']
 
 
 from collections import namedtuple
-from SICP.vseval.builtins import *
+
+
+
+class LispException(Exception): pass
+class UnboundVar(LispException): pass
 
 compound_procedure = namedtuple('compound_procedure', 'params, body, env')
+
 
 def vseval(exp, env):
     # properly tail recursive
@@ -66,6 +71,15 @@ def text_of_quotation(exp, env):
     return text
 
 
+def to_lambda(exp):
+    "(define (foo x) ...) => (define foo (lambda (x) ...))"
+    _, var, *body = exp
+    if isinstance(var, list):
+        name, *params = var
+        return ['define', name, ['lambda', params] + body]
+    return exp
+
+
 class Env:
     def __init__(self, frame={}):
         self.frame = frame
@@ -111,41 +125,58 @@ class Env:
         return newenv
 
 
-class LispException(Exception): pass
-class UnboundVar(LispException): pass
-
-
-def to_lambda(exp):
-    "(define (foo x) ...) => (define foo (lambda (x) ...))"
-    _, var, *body = exp
-    if isinstance(var, list):
-        name, *params = var
-        return ['define', name, ['lambda', params] + body]
-    return exp
-
-
 def setup_global_env():
+    import operator
+    from functools import reduce
+
+    class cons(namedtuple('cons', 'car, cdr')):
+        __slots__ = ()
+        def __str__(self):
+            elts = [str(self.car)]
+            cdr = self.cdr
+
+            while isinstance(cdr, cons):
+                elts.append(str(cdr.car))
+                cdr = cdr.cdr
+            if cdr != []:
+                elts.append('.')
+                elts.append(str(cdr))
+            return '(' + ' '.join(elts) + ')'
+
+    def lisp_list(*args):
+        args = list(args)
+        result = []
+        while args:
+            result = cons(args.pop(), result)
+        return result
+
+    def lisp_compare(xs, pred):
+        for x1, x2 in zip(xs, xs[1:]):
+            if not pred(x1, x2):
+                return 'false'
+        return 'true'
+
     frame = GLOBAL_ENV.frame
 
-    frame['+'] = plus
-    frame['-'] = minus
-    frame['*'] = mult
-    frame['/'] = div
-    frame['rem'] = lisp_rem
+    frame['+'] = lambda *xs: sum(xs)
+    frame['-'] = lambda *xs: reduce(lambda x, y: x - y, xs)
+    frame['*'] = lambda *xs: reduce(lambda x, y: x * y, xs)
+    frame['/'] = lambda *xs: reduce(lambda x, y: x / y, xs)
+    frame['rem'] = lambda a, b: a % b
 
-    frame['null?'] = is_null
+    frame['null?'] = lambda x: 'true' if x == [] else 'false'
     frame['cons'] = cons
-    frame['car'] = car
-    frame['cdr'] = cdr
+    frame['car'] = lambda x: x.car
+    frame['cdr'] = lambda x: x.cdr
     frame['list'] = lisp_list
 
-    frame['not'] = lisp_not
-    frame['='] = lisp_eq
-    frame['equal?'] = lisp_eq
-    frame['<'] = lisp_lt
-    frame['>'] = lisp_gt
-    frame['<='] = lisp_le
-    frame['>='] = lisp_ge
+    frame['not'] = lambda x: 'true' if not x else 'false'
+    frame['='] = lambda *xs: lisp_compare(xs, operator.eq)
+    frame['equal?'] = lambda *xs: lisp_compare(xs, operator.eq)
+    frame['<'] = lambda *xs: lisp_compare(xs, operator.lt)
+    frame['>'] = lambda *xs: lisp_compare(xs, operator.gt)
+    frame['<='] = lambda *xs: lisp_compare(xs, operator.le)
+    frame['>='] = lambda *xs: lisp_compare(xs, operator.ge)
 
     frame['display'] = print
 

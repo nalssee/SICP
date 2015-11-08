@@ -5,7 +5,6 @@ FILEPATH = os.path.dirname(os.path.realpath(__file__))
 PYPATH = os.path.join(FILEPATH, '..', '..')
 sys.path.append(PYPATH)
 
-
 from SICP.vseval.vseval import *
 from SICP.vseval.parser import parse
 
