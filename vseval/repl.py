@@ -1,25 +1,24 @@
 import os
 import sys
 
-TESTPATH = os.path.dirname(os.path.realpath(__file__))
-PYPATH = os.path.join(TESTPATH, '..', '..')
+FILEPATH = os.path.dirname(os.path.realpath(__file__))
+PYPATH = os.path.join(FILEPATH, '..', '..')
 sys.path.append(PYPATH)
 
-print(PYPATH)
 
-from SICP.vseval.parser import parse
 from SICP.vseval.vseval import *
+from SICP.vseval.parser import parse
 
 
 PROMPT = "VSEVAL> "
 
 print("""
-Vanilla Scheme interpreter for SICP Chapter 4
+    Vanilla Scheme interpreter for SICP Chapter 4
 
-After typing in a Lisp expression,
-press Enter followed by ctrl-d for evaluation.
+    After typing in a Lisp expression,
+    press Enter followed by ctrl-d for evaluation.
 
-(quit) or (exit) to finish this repl.
+    (quit) or (exit) to finish this repl.
 """)
 
 while True:
