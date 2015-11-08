@@ -1,13 +1,10 @@
 __all__ = ['vseval', 'Env', 'UnboundVar', 'GLOBAL_ENV']
 
-
 from collections import namedtuple
-
 
 
 class LispException(Exception): pass
 class UnboundVar(LispException): pass
-
 compound_procedure = namedtuple('compound_procedure', 'params, body, env')
 
 
