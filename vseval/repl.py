@@ -9,7 +9,7 @@ print(PYPATH)
 
 from SICP.vseval.parser import parse
 from SICP.vseval.vseval import *
-import pprint
+
 
 PROMPT = "VSEVAL> "
 
@@ -39,7 +39,7 @@ if __name__ == "__main__":
                 print("Goodbye!!")
                 break
             print("=> ", end='')
-            pprint.pprint(vseval(expr, GLOBAL_ENV))
+            print(vseval(expr, GLOBAL_ENV))
 
         except Exception as e:
             print(e)
