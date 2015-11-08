@@ -152,4 +152,36 @@ class EVALTest(unittest.TestCase):
         """)
         self.assertEqual(ev("(foo)"), 12)
 
+    def test_scope(self):
+        ev("(define x 10)")
+        ev("""
+        (define (foo x)
+          (set! x 20))
+        """)
+        ev("(foo 30)")
+        self.assertEqual(ev("x"), 10)
+        ev("""
+        (define (bar)
+          (set! x 1000))
+        """)
+        ev("(bar)")
+        self.assertEqual(ev("x"), 1000)
+
+    def test_define2(self):
+        ev("""
+        (define (even? x)
+          (if (= x 0)
+              true
+              (odd (- x 1))))
+        """)
+        ev("""
+        (define (odd? x)
+          (if (= x 0)
+              false
+              (even (- x 1))))
+        """)
+        self.assertEqual(ev('(odd 17)'), 'true')
+        self.assertEqual(ev('(odd 18)'), 'false')
+        self.assertEqual(ev('(even 100)'), 'true')
+
 unittest.main()
