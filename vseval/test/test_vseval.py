@@ -2,56 +2,56 @@ import os
 import sys
 
 TESTPATH = os.path.dirname(os.path.realpath(__file__))
-PYPATH = os.path.join(TESTPATH, '..', '..')
+PYPATH = os.path.join(TESTPATH, '..', '..', '..')
 sys.path.append(PYPATH)
 
-from SICP.lisp_parser import parse
-from SICP.lisp import *
+from SICP.vseval.parser import parse
+from SICP.vseval.vseval import *
 import unittest
 
 
 def ev(exp, env=GLOBAL_ENV):
-    return evaluate(parse(exp), env)
+    return vseval(parse(exp), env)
 
 
 class EVALTest(unittest.TestCase):
 
     def test_selfeval(self):
-        self.assertEqual(evaluate(parse('30'), Env()), 30)
-        self.assertEqual(evaluate(parse("32.3"), Env()), 32.3)
-        self.assertEqual(evaluate(parse('  "Hello World!"  '), Env()), '"Hello World!"')
+        self.assertEqual(ev('30'), 30)
+        self.assertEqual(ev("32.3"), 32.3)
+        self.assertEqual(ev('  "Hello World!"  '), '"Hello World!"')
 
     def test_lookup_simple(self):
         env = Env({'a': 30})
 
-        self.assertEqual(evaluate(parse('a'), env), 30)
+        self.assertEqual(ev('a', env), 30)
         with self.assertRaises(UnboundVar):
-            evaluate(parse('b'), env)
+            ev('b', env)
 
         env.upper = Env({'b': 20})
-        self.assertEqual(evaluate(parse('b'), env), 20)
+        self.assertEqual(ev('b', env), 20)
 
     def test_quote(self):
-        self.assertEqual(evaluate(parse("'abc"), Env()), 'abc')
+        self.assertEqual(ev("'abc"), 'abc')
         self.assertEqual(ev("'(a ( b ) c)"), ev("(list 'a (list 'b) 'c)"))
 
     def test_define_simple(self):
         env = Env()
-        evaluate(parse('(define a 20)'), env)
-        self.assertEqual(evaluate(parse('a'), env), 20)
-        evaluate(parse("(define b 'abc)"), env)
-        self.assertEqual(evaluate(parse('b'), env), 'abc')
-        evaluate(parse("(define a '30.3)"), env)
-        self.assertEqual(evaluate(parse('a'), env), 30.3)
+        ev('(define a 20)', env)
+        self.assertEqual(ev('a', env), 20)
+        ev("(define b 'abc)", env)
+        self.assertEqual(ev('b', env), 'abc')
+        ev("(define a '30.3)", env)
+        self.assertEqual(ev('a', env), 30.3)
 
     def test_assignment_simple(self):
         env = Env()
-        evaluate(parse('(define a 10)'), env)
-        self.assertEqual(evaluate(parse('a'), env), 10)
-        evaluate(parse('(set! a 30)'), env)
-        self.assertEqual(evaluate(parse('a'), env), 30)
+        ev('(define a 10)', env)
+        self.assertEqual(ev('a', env), 10)
+        ev('(set! a 30)', env)
+        self.assertEqual(ev('a', env), 30)
         with self.assertRaises(UnboundVar):
-            evaluate(parse('(set! b 10)'), env)
+            ev('(set! b 10)', env)
 
     def test_if(self):
         self.assertEqual(ev('(if true 10 20)'), 10)

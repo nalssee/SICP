@@ -1,20 +1,31 @@
-from lisp_parser import parse
+import os
+import sys
+
+TESTPATH = os.path.dirname(os.path.realpath(__file__))
+PYPATH = os.path.join(TESTPATH, '..', '..')
+sys.path.append(PYPATH)
+
+print(PYPATH)
+
+from SICP.vseval.parser import parse
+from SICP.vseval.vseval import *
 import pprint
 
-
-def lisp_eval(expr):
-    return expr
-
+PROMPT = "VSEVAL> "
 
 if __name__ == "__main__":
 
     print("""
-    SICP LISP!!
-    Happy Hacking
+    Vanilla Scheme interpreter for SICP Chapter 4
+
+    After typing in a Lisp expression,
+    press Enter followed by ctrl-d for evaluation.
+
+    (quit) or (exit) to finish this repl.
     """)
 
     while True:
-        print("lisp> ", end='')
+        print(PROMPT, end='')
         code_all = []
         try:
             while True:
@@ -28,7 +39,7 @@ if __name__ == "__main__":
                 print("Goodbye!!")
                 break
             print("=> ", end='')
-            pprint.pprint(lisp_eval(expr))
+            pprint.pprint(vseval(expr, GLOBAL_ENV))
 
         except Exception as e:
             print(e)

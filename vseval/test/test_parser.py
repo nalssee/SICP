@@ -2,11 +2,10 @@ import os
 import sys
 
 TESTPATH = os.path.dirname(os.path.realpath(__file__))
-PYPATH = os.path.join(TESTPATH, '..', '..')
+PYPATH = os.path.join(TESTPATH, '..', '..', '..')
 sys.path.append(PYPATH)
 
-
-from SICP.lisp_parser import parse
+from SICP.vseval.parser import parse
 import unittest
 
 class LispParserTest(unittest.TestCase):

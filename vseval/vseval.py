@@ -1,41 +1,44 @@
-__all__ = ['evaluate', 'Env', 'UnboundVar', 'GLOBAL_ENV']
+__all__ = ['vseval', 'Env', 'UnboundVar', 'GLOBAL_ENV']
 
 
 from collections import namedtuple
-from SICP.lisp_parser import parse
-from SICP.builtins import *
+from SICP.vseval.parser import parse
+from SICP.vseval.builtins import *
 
 compound_procedure = namedtuple('compound_procedure', 'params, body, env')
 
-def evaluate(exp, env):
+def vseval(exp, env):
+    # properly tail recursive
     while True:
         if is_self_evaluating(exp):
             return exp
-        if is_variable(exp):
+        if isinstance(exp, str):
             return env.lookup(exp)
-        if tagged(exp, 'quote'):
+
+        cmd, *args = exp
+
+        if cmd == 'quote':
             return text_of_quotation(exp, env)
-        if tagged(exp, 'set!'):
+        if cmd == 'set!':
             return env.assign(exp)
-        if tagged(exp, 'define'):
+        if cmd == 'define':
             return env.define(paren2lambda(exp))
-        if tagged(exp, 'if'):
-            _, test, yes, no = exp
-            exp = yes if evaluate(test, env) != 'false' else no
+        if cmd == 'if':
+            test, yes, no = args
+            exp = yes if vseval(test, env) != 'false' else no
             continue
-        if tagged(exp, 'lambda'):
-            _, params, *body = exp
+        if cmd == 'lambda':
+            params, *body = args
             body = body[0] if len(body) == 1 else ['begin'] + body
             return compound_procedure(params, body, env)
-        if tagged(exp, 'begin'):
-            _, *actions, exp = exp
+        if cmd == 'begin':
+            *actions, exp = args
             for act in actions:
-                evaluate(act, env)
+                vseval(act, env)
             continue
         # And it's a procedure application
-        op, *args = exp
-        proc = evaluate(op, env)
-        args = [evaluate(arg, env) for arg in args]
+        proc = vseval(cmd, env)
+        args = [vseval(arg, env) for arg in args]
 
         if isinstance(proc, compound_procedure):
             env = proc.env.extend(proc.params, args)
@@ -54,20 +57,8 @@ def is_self_evaluating(exp):
 def text_of_quotation(exp, env):
     _, text = exp
     if isinstance(text, list):
-        return evaluate(["list"] + [['quote', x] for x in text], env)
+        return vseval(["list"] + [['quote', x] for x in text], env)
     return text
-
-
-def is_variable(exp):
-    return isinstance(exp, str)
-
-
-def tagged(exp, command):
-    return isinstance(exp, list) and exp != [] and exp[0] == command
-
-
-def is_application(exp):
-    return isinstance(exp, list) and exp != []
 
 
 class Env:
@@ -88,7 +79,7 @@ class Env:
     def assign(self, exp):
         _, var, valexp = exp
         # evaluate first before the assignment
-        val = evaluate(valexp, self)
+        val = vseval(valexp, self)
         def env_loop(env):
             try:
                 env.frame[var]
@@ -104,7 +95,7 @@ class Env:
 
     def define(self, exp):
         _, var, val = exp
-        self.frame[var] = evaluate(val, self)
+        self.frame[var] = vseval(val, self)
 
     def extend(self, params, args):
         newframe = {}
@@ -129,31 +120,29 @@ def paren2lambda(exp):
 
 
 def setup_global_env():
-    def assign_pyfunc(func_symb, pyfunc):
-        frame = GLOBAL_ENV.frame
-        frame[func_symb] = pyfunc
+    frame = GLOBAL_ENV.frame
 
-    assign_pyfunc('+', plus)
-    assign_pyfunc('-', minus)
-    assign_pyfunc('*', mult)
-    assign_pyfunc('/', div)
-    assign_pyfunc('rem', lisp_rem)
+    frame['+'] = plus
+    frame['-'] = minus
+    frame['*'] = mult
+    frame['/'] = div
+    frame['rem'] = lisp_rem
 
-    assign_pyfunc('null?', is_null)
-    assign_pyfunc('cons', cons)
-    assign_pyfunc('car', car)
-    assign_pyfunc('cdr', cdr)
-    assign_pyfunc('list', lisp_list)
+    frame['null?'] = is_null
+    frame['cons'] = cons
+    frame['car'] = car
+    frame['cdr'] = cdr
+    frame['list'] = lisp_list
 
-    assign_pyfunc('not', lisp_not)
-    assign_pyfunc('=', lisp_eq)
-    assign_pyfunc('equal?', lisp_eq)
-    assign_pyfunc('<', lisp_lt)
-    assign_pyfunc('>', lisp_gt)
-    assign_pyfunc('<=', lisp_le)
-    assign_pyfunc('>=', lisp_ge)
+    frame['not'] = lisp_not
+    frame['='] = lisp_eq
+    frame['equal?'] = lisp_eq
+    frame['<'] = lisp_lt
+    frame['>'] = lisp_gt
+    frame['<='] = lisp_le
+    frame['>='] = lisp_ge
 
-    assign_pyfunc('display', print)
+    frame['display'] = print
 
 
 GLOBAL_ENV = Env()
