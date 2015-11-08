@@ -13,29 +13,33 @@ PROMPT = "VSEVAL> "
 
 print("""
     Vanilla Scheme interpreter for SICP Chapter 4
-
-    After typing in a Lisp expression,
-    press Enter followed by ctrl-d for evaluation.
-
-    (quit) or (exit) to finish this repl.
+    ctrl-d to exit,
+    Happy Hacking!!
 """)
 
-while True:
-    print(PROMPT, end='')
-    code_all = []
-    try:
-        while True:
-            try:
-                code = input()
-                code_all.append(code)
-            except EOFError:
-                break
-        expr = parse(' '.join(code_all))
-        if expr == ['quit'] or expr == ['exit']:
-            print("Goodbye!!")
-            break
-        print("=> ", end='')
-        print(vseval(expr, GLOBAL_ENV))
 
-    except Exception as e:
-        print(e)
+code_to_eval = []
+while True:
+    if code_to_eval == []:
+        print(PROMPT, end='')
+    try:
+        code = input()
+    except EOFError:
+        print('Goodbye!!')
+        break
+    else:
+        code_to_eval.append(code)
+        expr = parse(' '.join(code_to_eval))
+        # succeeds to parse
+        if expr != None:
+            try:
+                value = vseval(expr, GLOBAL_ENV)
+            except UnboundVar as e:
+                print('Unbound Variable: ', e)
+            except Exception as e:
+                print('Error: ', e)
+            else:
+                print("=> ", end='')
+                print(value)
+            finally:
+                code_to_eval = []
