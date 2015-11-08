@@ -167,7 +167,7 @@ def setup_global_env():
     frame['cdr'] = lambda x: x.cdr
     frame['list'] = lisp_list
 
-    frame['not'] = lambda x: 'true' if not x else 'false'
+    frame['not'] = lambda x: 'true' if x == 'false' else 'false'
     frame['='] = lambda *xs: lisp_compare(xs, operator.eq)
     frame['equal?'] = lambda *xs: lisp_compare(xs, operator.eq)
     frame['<'] = lambda *xs: lisp_compare(xs, operator.lt)

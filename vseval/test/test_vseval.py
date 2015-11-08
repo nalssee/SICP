@@ -128,11 +128,20 @@ class EVALTest(unittest.TestCase):
               (cons (fn (car xs)) (map fn (cdr xs)))))
         """)
 
+        ev("""
+        (define (odd x) (= (rem x 2) 1))
+        """)
+        ev("""
+        (define (even x) (not (odd x)))
+        """)
+
         self.assertEqual(ev('(gcd 216 48)'), 24)
         # properly tail recursive
         self.assertEqual(ev("(sum 2000)"), 2001000)
         self.assertEqual(ev("(map fib '(1 2 3 4 5 6 7 8))"),
                          ev("'(1 1 2 3 5 8 13 21)"))
+        self.assertEqual(ev("(even 20)"), 'true')
+        self.assertEqual(ev("(even 17)"), 'false')
 
     def test_sequence(self):
         ev("""
