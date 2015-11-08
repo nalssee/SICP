@@ -16,8 +16,8 @@ def vseval(exp, env):
     while True:
         if is_self_evaluating(exp):
             return exp
-        # exp is a variable
         if isinstance(exp, str):
+            # exp must be a variable at this point
             return env.lookup(exp)
 
         cmd, *args = exp
