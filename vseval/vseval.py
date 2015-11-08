@@ -2,7 +2,6 @@ __all__ = ['vseval', 'Env', 'UnboundVar', 'GLOBAL_ENV']
 
 
 from collections import namedtuple
-from SICP.vseval.parser import parse
 from SICP.vseval.builtins import *
 
 compound_procedure = namedtuple('compound_procedure', 'params, body, env')
