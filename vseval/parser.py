@@ -15,6 +15,7 @@ def tokenize(expr):
     \)|                       # right paren
     [\w.?!+-></=*+]+|         # identifier
     ".*?"|                    # string
+    \.
     )
     """, re.VERBOSE)
     return (x for x in re.findall(regex, expr) if x != '')

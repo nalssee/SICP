@@ -1,10 +1,6 @@
 import os
 import sys
 
-TESTPATH = os.path.dirname(os.path.realpath(__file__))
-PYPATH = os.path.join(TESTPATH, '..', '..', '..')
-sys.path.append(PYPATH)
-
 from SICP.vseval.parser import parse
 import unittest
 
@@ -53,5 +49,6 @@ class LispParserTest(unittest.TestCase):
         self.assertEqual(parse(code),
                          ['define', 'his-name', ['quote', ['quote', ['kenjin', 'che']]]]
         )
+
 
 unittest.main()
