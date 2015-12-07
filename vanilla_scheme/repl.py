@@ -1,12 +1,9 @@
 import os
 import sys
 
-FILEPATH = os.path.dirname(os.path.realpath(__file__))
-PYPATH = os.path.join(FILEPATH, '..', '..')
-sys.path.append(PYPATH)
 
-from SICP.vseval.vseval import *
-from SICP.vseval.parser import parse
+from SICP.lisp_parser.lp import parse
+from SICP.vanilla_scheme.vseval import *
 
 
 PROMPT = "VSEVAL> "

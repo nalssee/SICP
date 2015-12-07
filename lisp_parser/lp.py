@@ -1,7 +1,4 @@
 """ A simple lisp parser for SICP exercises
-
-Mostly from norvig.com,
-just using a coroutine instead of lists.
 """
 import re
 

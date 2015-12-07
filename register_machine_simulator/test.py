@@ -1,6 +1,6 @@
 import unittest
-from SICP.rms.parser import parse
-from SICP.rms.rms import *
+from SICP.lisp_parser.lp import parse
+from SICP.register_machine_simulator.rms import *
 
 
 class RMSTest(unittest.TestCase):

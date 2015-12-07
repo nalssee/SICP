@@ -1,8 +1,8 @@
 import os
 import sys
 
-from SICP.vseval.parser import parse
-from SICP.vseval.vseval import *
+from SICP.lisp_parser.lp import parse
+from SICP.vanilla_scheme.vseval import *
 import unittest
 
 

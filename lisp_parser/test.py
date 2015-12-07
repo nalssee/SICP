@@ -1,7 +1,4 @@
-import os
-import sys
-
-from SICP.vseval.parser import parse
+from SICP.lisp_parser.lp import parse
 import unittest
 
 class LispParserTest(unittest.TestCase):
@@ -50,5 +47,11 @@ class LispParserTest(unittest.TestCase):
                          ['define', 'his-name', ['quote', ['quote', ['kenjin', 'che']]]]
         )
 
+    def test_dot(self):
+        self.assertEqual(parse("(a . b)"),
+                         ['a', ['dot', 'b']])
+
+        with self.assertRaises(ValueError):
+            print(parse("(a . b c)"))
 
 unittest.main()
