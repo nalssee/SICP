@@ -237,15 +237,15 @@ def smallest_divisor(n):
     return find_divisor(n, 2)
 
 
+# 22
 def time_tag(func):
-    """returns (exetime, func(*args, **kwargs))
-    """
+    "Returns a time tag with the original return value as a tuple"
     @wraps(func)
     def wrapper(*args, **kwargs):
         start = time.time()
         result = func(*args, **kwargs)
         end= time.time()
-        return (end - start, result)
+        return (end -start, result)
     return wrapper
 
 
@@ -254,20 +254,21 @@ def is_prime(n):
     return smallest_divisor(n) == n
 
 
-def search_for_prime(a):
+def search_for_prime(a, test_fn):
     """search for prime numbers from n
     """
     for i in range(a, 10**100):
-        t, test = is_prime(i)
+        time, test = test_fn(i)
         if test:
-            yield t, i
+            print(i, "is a prime. It took", time, "seconds")
+            yield i
 
 def ex22():
     def three_primes(n):
         """three smallest prime numbers from n
         """
-        for t, v in islice(search_for_prime(n), 3):
-            print(" *** %d %6.10f " % (v, t))
+        for _ in islice(search_for_prime(n, is_prime), 3):
+            pass
     # see for yourself
     print()
     three_primes(100000)
@@ -275,3 +276,41 @@ def ex22():
     three_primes(10000000)
     print()
     three_primes(1000000000)
+
+# ex22()
+
+
+# 23
+def smallest_devisor1(n):
+    def find_devisor(n, test_val):
+        while test_val ** 2 < n:
+            if n % test_val == 0:
+                return test_val
+            else:
+                if test_val == 2:
+                    test_val = 3
+                else:
+                    test_val += 2
+        return n
+    return find_devisor(n, 2)
+
+
+@time_tag
+def is_prime1(n):
+    return smallest_divisor1(n) == n
+
+def ex23():
+    def three_primes(n):
+        """three smallest prime numbers from n
+        """
+        for _ in islice(search_for_prime(n, is_prime1), 3):
+            pass
+    # see for yourself
+    print()
+    three_primes(100000)
+    print()
+    three_primes(10000000)
+    print()
+    three_primes(1000000000)
+
+# ex23()

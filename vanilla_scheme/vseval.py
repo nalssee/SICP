@@ -3,8 +3,12 @@ __all__ = ['vseval', 'Env', 'UnboundVar', 'GLOBAL_ENV']
 from collections import namedtuple
 
 
-class LispException(Exception): pass
-class UnboundVar(LispException): pass
+class LispException(Exception):
+    pass
+
+
+class UnboundVar(LispException):
+    pass
 compound_procedure = namedtuple('compound_procedure', 'params, body, env')
 
 
@@ -55,7 +59,7 @@ def is_self_evaluating(exp):
     """
     return \
         isinstance(exp, int) or isinstance(exp, float) \
-        or (isinstance(exp, str) and len(exp) >=2 and exp[0] == '"' and exp[-1] == '"') \
+        or (isinstance(exp, str) and len(exp) >= 2 and exp[0] == '"' and exp[-1] == '"') \
         or exp == 'true' or exp == 'false'
 
 
@@ -78,6 +82,7 @@ def to_lambda(exp):
 
 
 class Env:
+
     def __init__(self, frame={}):
         self.frame = frame
         # Upper Env, not upper frame
@@ -96,6 +101,7 @@ class Env:
         _, var, valexp = exp
         # evaluate the value expression first before the assignment
         val = vseval(valexp, self)
+
         def env_loop(env):
             try:
                 env.frame[var]
@@ -128,6 +134,7 @@ def setup_global_env():
 
     class cons(namedtuple('cons', 'car, cdr')):
         __slots__ = ()
+
         def __str__(self):
             elts = [str(self.car)]
             cdr = self.cdr
