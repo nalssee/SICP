@@ -1,8 +1,10 @@
 # for 03
 import heapq
 import time
+from random import randint
 from functools import wraps
 from itertools import islice
+
 
 # 03
 def sum_of_squares_of_the_largest_n(xs, n):
@@ -239,49 +241,46 @@ def smallest_divisor(n):
 
 # 22
 def time_tag(func):
-    "Returns a time tag with the original return value as a tuple"
+    "Prints the time it took"
     @wraps(func)
     def wrapper(*args, **kwargs):
         start = time.time()
-        result = func(*args, **kwargs)
-        end= time.time()
-        return (end -start, result)
+        func(*args, **kwargs)
+        end = time.time()
+        print("It took %f seconds" % (end - start))
     return wrapper
 
 
-@time_tag
 def is_prime(n):
     return smallest_divisor(n) == n
 
 
 def search_for_prime(a, test_fn):
-    """search for prime numbers from n
+    """search for prime numbers from a
     """
-    for i in range(a, 10**100):
-        time, test = test_fn(i)
-        if test:
-            print(i, "is a prime. It took", time, "seconds")
-            yield i
+    while True:
+        if test_fn(a):
+            yield a
+        a += 1
+        
 
 def ex22():
+    @time_tag
     def three_primes(n):
         """three smallest prime numbers from n
         """
-        for _ in islice(search_for_prime(n, is_prime), 3):
-            pass
+        for i in islice(search_for_prime(n, is_prime), 3):
+            print(i)
     # see for yourself
-    print()
     three_primes(100000)
-    print()
     three_primes(10000000)
-    print()
     three_primes(1000000000)
-
+    
 # ex22()
 
 
 # 23
-def smallest_devisor1(n):
+def smallest_divisor1(n):
     def find_devisor(n, test_val):
         while test_val ** 2 < n:
             if n % test_val == 0:
@@ -295,22 +294,77 @@ def smallest_devisor1(n):
     return find_devisor(n, 2)
 
 
-@time_tag
 def is_prime1(n):
     return smallest_divisor1(n) == n
 
+
 def ex23():
+    @time_tag
     def three_primes(n):
         """three smallest prime numbers from n
         """
-        for _ in islice(search_for_prime(n, is_prime1), 3):
-            pass
+        for i in islice(search_for_prime(n, is_prime1), 3):
+            print(i)
     # see for yourself
-    print()
     three_primes(100000)
-    print()
     three_primes(10000000)
-    print()
     three_primes(1000000000)
 
 # ex23()
+
+
+# 24
+
+def expmod(base, exp, m):
+    if exp == 0:
+        return 1
+    elif exp % 2 == 0:
+        return (expmod(base, exp // 2, m) ** 2) % m
+    else:
+        return (base * expmod(base, exp - 1, m)) % m
+
+# def expmod(base, exp, m):
+#     return fast_expt(base, exp) % m
+
+
+def fermat_test(n):
+    a = randint(1, n - 1)
+    return expmod(a, n, n) == a
+
+
+def is_prime_fast(n, times=5):
+    if times == 0:
+        return True
+    elif fermat_test(n):
+        return is_prime_fast(n, times - 1)
+    else:
+        return False
+
+    
+def ex24():
+    @time_tag
+    def three_primes(n):
+        """three smallest prime numbers from n
+        """
+        for i in islice(search_for_prime(n, is_prime_fast), 3):
+            print(i)
+    # see for yourself
+    three_primes(100000)
+    three_primes(10000000)
+    three_primes(1000000000)
+    
+# ex24()
+
+
+# 25
+# It doesn't work because you have to compute exponential first with Alyssa's idea
+# it costs a lot
+
+
+# 26
+
+
+
+
+    
+    
