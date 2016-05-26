@@ -262,7 +262,7 @@ def search_for_prime(a, test_fn):
         if test_fn(a):
             yield a
         a += 1
-        
+
 
 def ex22():
     @time_tag
@@ -275,7 +275,7 @@ def ex22():
     three_primes(100000)
     three_primes(10000000)
     three_primes(1000000000)
-    
+
 # ex22()
 
 
@@ -340,7 +340,7 @@ def is_prime_fast(n, times=5):
     else:
         return False
 
-    
+
 def ex24():
     @time_tag
     def three_primes(n):
@@ -352,7 +352,7 @@ def ex24():
     three_primes(100000)
     three_primes(10000000)
     three_primes(1000000000)
-    
+
 # ex24()
 
 
@@ -362,9 +362,49 @@ def ex24():
 
 
 # 26
+# It's really stupid
+# See ex 2.43
+
+# 27
+def carmichael_test(n):
+    return all(expmod(i, n, n) == i for i in range(2, n))
+
+carmichael_numbers = [561, 1105, 1729, 2465, 2821, 6601]
+def ex27():
+    print()
+    for n in carmichael_numbers:
+        print("Carmichael: ", carmichael_test(n), "|  Prime: ", is_prime(n))
+
+# ex27()
 
 
+# 28
+# boring, skipping
 
 
-    
-    
+# 29
+def integral(f, a, b, n):
+    h = (b - a) / n
+
+    total = 0
+    for k in range(1, n, 2):
+        y0 = f(a + (k - 1) * h)
+        y1 = f(a + k * h)
+        y2 = f(a + (k + 1) * h)
+        total += y0 + 4 * y1 + y2
+    return total * h / 3
+
+# pretty accurate
+# print(integral(lambda x: x ** 3, 0, 1, 100))
+
+
+# 30
+# Python doesn't generally support TCO
+# So, you can't just follow as shown in the exercise
+# but, do you see any difference?
+def sum(term, a, next, b):
+    result = 0
+    while a <= b:
+        result += term(a)
+        a = next(a)
+    return result
