@@ -1,8 +1,6 @@
-# Very simple lib or Picture language
+# Picture language
 
-from subprocess import Popen
-from bs4 import BeautifulSoup
-
+# from subprocess import Popen
 
 class Tag:
     "Write html tags easier"
@@ -17,13 +15,11 @@ class Tag:
         def attr_to_str(d):
             return " ".join("%s=\"%s\"" % (k, v) for k, v in d.items())
 
-        def prettify(html):
-            return BeautifulSoup(html, 'html.parser').prettify()
-
-        # BeautifulSoup prettify turns <br></br> to <br/>
-        vals = ''.join(str(val) for val in self.values)
-        return prettify("<%s %s>%s</%s>" %
-        (self.name, attr_to_str(self.attributes), vals, self.name))
+        if self.values:
+            vals = ''.join(str(val) for val in self.values)
+            return "<%s %s>%s</%s>" % (self.name, attr_to_str(self.attributes), vals, self.name)
+        else:
+            return "<%s %s />" % (self.name, attr_to_str(self.attributes))
 
 
 class Vect:
@@ -116,6 +112,12 @@ def flip_vert(painter):
                              Vect(1, 1),
                              Vect(0, 0))
 
+def flip_horiz(painter):
+    return transform_painter(painter,
+                             Vect(1, 0),
+                             Vect(0, 0),
+                             Vect(1, 1))
+
 
 def beside(painter1, painter2):
     split_point = Vect(0.5, 0)
@@ -128,8 +130,54 @@ def beside(painter1, painter2):
                                     Vect(1, 0),
                                     Vect(0.5, 1))
     def apply_frame(frame):
+        # paint_left(frame) : a list of tags
         return paint_left(frame) + paint_right(frame)
     return apply_frame
+
+def below(painter1, painter2):
+    split_point = Vect(0, 0.5)
+    paint_upper = transform_painter(painter2,
+                                    split_point,
+                                    Vect(1, 0.5),
+                                    Vect(0, 1))
+    paint_lower = transform_painter(painter1,
+                                    Vect(0, 0),
+                                    Vect(1, 0),
+                                    Vect(0, 0.5))
+    def apply_frame(frame):
+        return paint_upper(frame) + paint_lower(frame)
+    return apply_frame
+
+def right_split(painter, n):
+    if n == 0:
+        return painter
+    else:
+        smaller = right_split(painter, n - 1)
+        return beside(painter, below(smaller, smaller))
+
+def up_split(painter, n):
+    if n == 0:
+        return painter
+    else:
+        smaller = up_split(painter, n - 1)
+        return below(painter, beside(smaller, smaller))
+
+def corner_split(painter, n):
+    if n == 0:
+        return painter
+    else:
+        up = up_split(painter, n - 1)
+        right = right_split(painter, n - 1)
+        top_left = beside(up, up)
+        bottom_right = below(right, right)
+        corner = corner_split(painter, n - 1)
+        return beside(below(painter, top_left),
+                      below(bottom_right, corner))
+
+def square_limit(painter, n):
+    quarter = corner_split(painter, n)
+    half = beside(flip_horiz(quarter), quarter)
+    return below(flip_vert(half), half)
 
 
 def draw(painter, width=600, height=600):
@@ -163,7 +211,7 @@ if __name__ == '__main__':
 
     with open(wave_file, 'w') as f:
         wave = shapes2painter(wave_lines)
-        waves = beside(flip_vert(wave), wave)
+        waves = square_limit(wave, 5)
         f.write(draw(waves))
 
-    Popen(['open', '-a', 'Google Chrome', wave_file])
+    # Popen(['open', '-a', 'Google Chrome', wave_file])
