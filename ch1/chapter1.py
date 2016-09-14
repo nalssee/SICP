@@ -402,9 +402,41 @@ def integral(f, a, b, n):
 # Python doesn't generally support TCO
 # So, you can't just follow as shown in the exercise
 # but, do you see any difference?
+# "next" is not a good name for a parameter though.
 def sum(term, a, next, b):
     result = 0
     while a <= b:
         result += term(a)
         a = next(a)
     return result
+
+
+# 31, I will just ignore the question
+# the following is simpler. ch1 doesn't use any data structures yet
+def pi_wallis(n=1000):
+    def numer():
+        yield 2
+        i = 2
+        while True:
+            yield i * 2
+            yield i * 2
+            i += 1
+
+    def denom():
+        i = 1
+        while True:
+            yield i * 2 + 1
+            yield i * 2 + 1
+            i += 1
+
+    result = 1
+    for n, d in islice(zip(numer(), denom()), n):
+        result *= n / d
+    return result * 4
+
+# print(pi_wallis())
+
+
+
+
+
